@@ -72,7 +72,17 @@ def delete_item(request, pk):
 def signup(request):
     serializer = UserSerlializer(data=request.data)
     if serializer.is_valid():
-        serializer.save()
-        user = User.objects.get(username = request.data['username'])
+        user = User(
+            username=serializer.validated_data['username'],
+            email=serializer.validated_data.get('email', '')
+        )
+        user.set_password(request.data['password'])
+        user.save()
         token = Token.objects.create(user=user)
-        return Response()
+
+        user_data = serializer.data
+        user_data.pop('password', None)
+
+        return Response({"user":user_data, "token":token.key})
+    else :
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
